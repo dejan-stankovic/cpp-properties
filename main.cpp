@@ -1,9 +1,11 @@
 #include "property.h"
 
-class Thing
+class Thing : public Object
 {
 public:
     static Properties properties;
+
+    Thing() : Object(properties) { }
 
     const char *getMessage() { return m_message; }
     void setMessage(const char *value) { m_message = value; }
