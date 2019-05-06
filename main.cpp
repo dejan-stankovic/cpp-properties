@@ -29,5 +29,17 @@ int main(int argc, char **argv)
     prop->set(&t, "hello universe");
     printf("get2: \"%s\"\n", prop->get<const char*>(&t));
     printf("get3: \"%d\"\n", t.properties.get<int>(&t, "unchanged"));
+
+    Value v = t.getProperty<Value>("message");
+    v.print();
+
+    v = Value("hello value");
+    t.setProperty("message", v);
+    t.getProperty<Value>("message").print();
+
+    v = Value(5);
+    t.setProperty("message", v);
+    t.getProperty<Value>("message").print();
+
     return 0;
 }

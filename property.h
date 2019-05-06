@@ -1,6 +1,44 @@
 #include <functional>
 #include <unordered_map>
 
+// Silly little stand-in for a variant type
+struct Value
+{
+    union {
+        int intValue;
+        const char *charValue;
+    };
+    bool isInt;
+
+    Value(int v) : intValue(v), isInt(true) { }
+    Value(const char *v) : charValue(v), isInt(false) { }
+
+    template<typename T> T convert();
+
+    void print() {
+        if (isInt)
+            printf("value int: %d\n", intValue);
+        else
+            printf("value string: %s\n", charValue);
+    }
+};
+
+template<> int Value::convert<int>()
+{
+    if (isInt)
+        return intValue;
+    else
+        return 0;
+};
+
+template<> const char *Value::convert<const char*>()
+{
+    if (isInt)
+        return nullptr;
+    else
+        return charValue;
+};
+
 class Object;
 // Generic base class of TypedProperty and all properties
 class Property
@@ -19,6 +57,10 @@ public:
     // Returns true if the object is compatible with the object type of this property
     virtual bool isOfObject(Object *object) = 0;
 
+    // Gets/sets the property with a generic Value
+    virtual Value getValue(Object *object) = 0;
+    virtual void setValue(Object *object, Value value) = 0;
+
     template<typename T> T get(Object *object);
     template<typename T> void set(Object *object, T value);
 };
@@ -34,6 +76,16 @@ public:
         , get(get)
         , set(set)
     {
+    }
+
+    virtual Value getValue(Object *object) override
+    {
+        return get(object);
+    }
+
+    virtual void setValue(Object *object, Value value) override
+    {
+        return set(object, value.convert<T>());
     }
 };
 
@@ -107,6 +159,19 @@ public:
 private:
     Properties &m_properties;
 };
+
+// Specialize getProperty/setProperty for Value
+template<> Value Object::getProperty<Value>(const char *name)
+{
+    auto prop = m_properties[name];
+    return prop->getValue(this);
+}
+
+template<> void Object::setProperty<Value>(const char *name, Value value)
+{
+    auto prop = m_properties[name];
+    prop->setValue(this, value);
+}
 
 // XXX abort() is not a great reaction to mismatched types
 template<typename T> T Property::get(Object *object)
