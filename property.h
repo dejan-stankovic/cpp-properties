@@ -1,8 +1,8 @@
 #include <functional>
 #include <unordered_map>
 
-// Base class of TypedProperty; object-specific but not value type-specific
-template<typename Object> class Property
+// Generic base class of TypedProperty and all properties
+class Property
 {
 public:
     const char * const name;
@@ -15,18 +15,18 @@ public:
     }
     virtual ~Property() { }
 
-    template<typename T> T get(Object *object);
-    template<typename T> void set(Object *object, T value);
+    template<typename T, typename Object> T get(Object *object);
+    template<typename T, typename Object> void set(Object *object, T value);
 };
 
-template<typename T, typename O> class TypedProperty : public Property<O>
+template<typename T, typename O> class TypedProperty : public Property
 {
 public:
     const std::function<T(O*)> get;
     const std::function<void(O*,T)> set;
 
     TypedProperty(const char name[], std::function<T(O*)> get, std::function<void(O*,T)> set)
-        : Property<O>(name, (bool)set)
+        : Property(name, (bool)set)
         , get(get)
         , set(set)
     {
@@ -34,7 +34,7 @@ public:
 };
 
 // XXX abort() is not a great reaction to mismatched types
-template<typename Object> template<typename T> T Property<Object>::get(Object *object)
+template<typename T, typename Object> T Property::get(Object *object)
 {
     auto val = dynamic_cast<TypedProperty<T,Object>*>(this);
     if (!val)
@@ -42,7 +42,7 @@ template<typename Object> template<typename T> T Property<Object>::get(Object *o
     return val->get(object);
 }
 
-template<typename Object> template<typename T> void Property<Object>::set(Object *object, T value)
+template<typename T, typename Object> void Property::set(Object *object, T value)
 {
     auto val = dynamic_cast<TypedProperty<T,Object>*>(this);
     if (!val)
@@ -60,10 +60,10 @@ template<typename Object> template<typename T> void Property<Object>::set(Object
 //     MakeProperty("readonly", &Thing::getMessage)
 // };
 //
-template<typename Object> class Properties
+class Properties
 {
 public:
-    Properties(std::initializer_list<Property<Object>*> props)
+    Properties(std::initializer_list<Property*> props)
     {
         for (auto prop : props)
             properties.insert({prop->name, prop});
@@ -71,34 +71,34 @@ public:
     Properties(const Properties &) = delete;
     Properties &operator=(const Properties &) = delete;
 
-    template<typename T> T get(Object *object, const char *prop) const
+    template<typename T, typename Object> T get(Object *object, const char *prop) const
     {
-        return properties.at(prop)->template get<T>(object);
+        return properties.at(prop)->template get<T,Object>(object);
     }
 
-    template<typename T> void set(Object *object, const char *prop, T value)
+    template<typename T, typename Object> void set(Object *object, const char *prop, T value)
     {
-        return properties.at(prop)->template set<T>(object, value);
+        return properties.at(prop)->template set<T,Object>(object, value);
     }
 
-    Property<Object> *operator[](const char *prop)
+    Property *operator[](const char *prop)
     {
         return properties.at(prop);
     }
 
 private:
-    std::unordered_map<const char*, Property<Object>*> properties;
+    std::unordered_map<const char*, Property*> properties;
 };
 
 // An empty set function makes a read-only property
-template<typename T, typename O> Property<O> *MakeProperty(const char name[], std::function<T(O*)> get, std::function<void(O*,T)> set = nullptr)
+template<typename T, typename O> Property *MakeProperty(const char name[], std::function<T(O*)> get, std::function<void(O*,T)> set = nullptr)
 {
     // XXX leaked.. would be nice if this was allocated differently :shrug:
     return new TypedProperty<T,O>{name, get, set};
 }
 
 // Overload for template deduction; allows the use of: MakeProperty(&Object::get, &Object::set)
-template<typename T, typename O> Property<O> *MakeProperty(const char name[], T(O::*get)(), void(O::*set)(T) = nullptr)
+template<typename T, typename O> Property *MakeProperty(const char name[], T(O::*get)(), void(O::*set)(T) = nullptr)
 {
     return MakeProperty<T,O>(name, std::function<T(O*)>(get), std::function<void(O*,T)>(set));
 }

@@ -3,7 +3,7 @@
 class Thing
 {
 public:
-    static Properties<Thing> properties;
+    static Properties properties;
 
     const char *getMessage() { return m_message; }
     void setMessage(const char *value) { m_message = value; }
@@ -14,7 +14,7 @@ private:
     const char *m_message = "hello world";
 };
 
-Properties<Thing> Thing::properties = {
+Properties Thing::properties = {
     MakeProperty("message", &Thing::getMessage, &Thing::setMessage),
     MakeProperty("unchanged", &Thing::unchanged)
 };
