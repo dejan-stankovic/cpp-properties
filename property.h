@@ -1,7 +1,7 @@
 #include <functional>
 #include <unordered_map>
 
-// Silly little stand-in for a variant type
+// Silly little stand-in for a variant type, don't read into it
 struct Value
 {
     union {
@@ -40,6 +40,7 @@ template<> const char *Value::convert<const char*>()
 };
 
 class Object;
+
 // Generic base class of TypedProperty and all properties
 class Property
 {
@@ -65,6 +66,8 @@ public:
     template<typename T> void set(Object *object, T value);
 };
 
+// TypedProperty is the type-specific subclass of Property, handling the getter/setter functions.
+// It is not object type specific.
 template<typename T> class TypedProperty : public Property
 {
 public:
@@ -89,6 +92,8 @@ public:
     }
 };
 
+// ObjectTypedProperty is unique to an object type and value type, capable of safely
+// casting anything. There may be more direct ways to implement some of this.
 template<typename T, typename O> class ObjectTypedProperty : public TypedProperty<T>
 {
 public:
@@ -143,6 +148,8 @@ private:
     std::unordered_map<const char*, Property*> properties;
 };
 
+// Object is a base class, provided for easy casting. It isn't otherwise meaningful.
+// Properties is statically allocated in the subclass, so it's awkwardly passed in here.
 class Object
 {
 public:

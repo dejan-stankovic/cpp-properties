@@ -37,6 +37,7 @@ int main(int argc, char **argv)
     t.setProperty("message", v);
     t.getProperty<Value>("message").print();
 
+    // This will set to null, because that's how Value treats type mismatch.
     v = Value(5);
     t.setProperty("message", v);
     t.getProperty<Value>("message").print();
