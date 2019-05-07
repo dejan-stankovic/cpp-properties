@@ -1,5 +1,6 @@
 #include <functional>
-#include <unordered_map>
+#include <vector>
+#include <cstring>
 
 // Silly little stand-in for a variant type, don't read into it
 struct Value
@@ -99,29 +100,41 @@ class Properties
 public:
     Properties(std::initializer_list<Property*> props)
     {
-        for (auto prop : props)
-            properties.insert({prop->name, prop});
+        for (auto prop : props) {
+            properties.push_back(prop);
+        }
     }
     Properties(const Properties &) = delete;
     Properties &operator=(const Properties &) = delete;
 
+    Property *find(const char *prop) const
+    {
+        for (const auto& iprop : properties) {
+            if (strcmp(iprop->name, prop) == 0) {
+                return iprop;
+            }
+        }
+
+        return nullptr;
+    }
+
     Value get(Object *object, const char *prop) const
     {
-        return properties.at(prop)->get(object);
+        return find(prop)->get(object);
     }
 
     void set(Object *object, const char *prop, Value value)
     {
-        return properties.at(prop)->set(object, value);
+        return find(prop)->set(object, value);
     }
 
     Property *operator[](const char *prop)
     {
-        return properties.at(prop);
+        return find(prop);
     }
 
 private:
-    std::unordered_map<const char*, Property*> properties;
+    std::vector<Property*> properties;
 };
 
 // Object is a base class, provided for easy casting. It isn't otherwise meaningful.
