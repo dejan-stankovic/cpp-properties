@@ -26,8 +26,8 @@ int main(int argc, char **argv)
     Thing t;
     t.properties.get(&t, "message").print();
     auto prop = t.properties["message"];
-    prop->set(&t, "hello universe");
-    prop->get(&t).print();
+    prop.set(&t, "hello universe");
+    prop.get(&t).print();
 
     // this one is an int
     t.getProperty("unchanged").print();

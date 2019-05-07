@@ -71,6 +71,13 @@ public:
     const PropertyGetter get;
     const PropertySetter set;
 
+    Property()
+        : name(nullptr)
+        , get(nullptr)
+        , set(nullptr)
+    {
+    }
+
     Property(const char *name, const PropertyGetter &&getter, const PropertySetter &&setter)
         : name(name)
         , get(std::move(getter))
@@ -98,7 +105,7 @@ public:
 class Properties
 {
 public:
-    Properties(std::initializer_list<Property*> props)
+    Properties(std::initializer_list<Property> props)
     {
         for (auto prop : props) {
             properties.push_back(prop);
@@ -107,34 +114,34 @@ public:
     Properties(const Properties &) = delete;
     Properties &operator=(const Properties &) = delete;
 
-    Property *find(const char *prop) const
+    Property find(const char *prop) const
     {
         for (const auto& iprop : properties) {
-            if (strcmp(iprop->name, prop) == 0) {
+            if (strcmp(iprop.name, prop) == 0) {
                 return iprop;
             }
         }
 
-        return nullptr;
+        return Property();
     }
 
     Value get(Object *object, const char *prop) const
     {
-        return find(prop)->get(object);
+        return find(prop).get(object);
     }
 
     void set(Object *object, const char *prop, Value value)
     {
-        return find(prop)->set(object, value);
+        return find(prop).set(object, value);
     }
 
-    Property *operator[](const char *prop)
+    Property operator[](const char *prop)
     {
         return find(prop);
     }
 
 private:
-    std::vector<Property*> properties;
+    std::vector<Property> properties;
 };
 
 // Object is a base class, provided for easy casting. It isn't otherwise meaningful.
@@ -148,9 +155,9 @@ public:
     }
     virtual ~Object() { }
 
-    Property *property(const char *prop) { return m_properties[prop]; }
-    Value getProperty(const char *prop) { return m_properties[prop]->get(this); }
-    void setProperty(const char *prop, Value value) { m_properties[prop]->set(this, value); }
+    Property property(const char *prop) { return m_properties[prop]; }
+    Value getProperty(const char *prop) { return m_properties[prop].get(this); }
+    void setProperty(const char *prop, Value value) { m_properties[prop].set(this, value); }
 
 private:
     Properties &m_properties;
@@ -159,14 +166,14 @@ private:
 // XXX These could probably be made into constructors and make a prettier syntax
 
 // An empty set function makes a read-only property
-template<typename T, typename O> Property *MakeProperty(const char name[], std::function<T(O*)> get, std::function<void(O*,T)> set = nullptr)
+template<typename T, typename O> Property MakeProperty(const char name[], std::function<T(O*)> get, std::function<void(O*,T)> set = nullptr)
 {
     // XXX This is leaked, if you care
-    return new Property(name, get, set);
+    return Property(name, get, set);
 }
 
 // Overload for template deduction; allows the use of: MakeProperty(&Object::get, &Object::set)
-template<typename T, typename O> Property *MakeProperty(const char name[], T(O::*get)(), void(O::*set)(T) = nullptr)
+template<typename T, typename O> Property MakeProperty(const char name[], T(O::*get)(), void(O::*set)(T) = nullptr)
 {
     return MakeProperty<T,O>(name, std::function<T(O*)>(get), std::function<void(O*,T)>(set));
 }
