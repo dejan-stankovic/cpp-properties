@@ -24,23 +24,18 @@ Properties Thing::properties = {
 int main(int argc, char **argv)
 {
     Thing t;
-    printf("get: \"%s\"\n", t.properties.get<const char*>(&t, "message"));
+    t.properties.get(&t, "message").print();
     auto prop = t.properties["message"];
     prop->set(&t, "hello universe");
-    printf("get2: \"%s\"\n", prop->get<const char*>(&t));
-    printf("get3: \"%d\"\n", t.properties.get<int>(&t, "unchanged"));
+    prop->get(&t).print();
 
-    Value v = t.getProperty<Value>("message");
-    v.print();
-
-    v = Value("hello value");
-    t.setProperty("message", v);
-    t.getProperty<Value>("message").print();
+    // this one is an int
+    t.getProperty("unchanged").print();
 
     // This will set to null, because that's how Value treats type mismatch.
-    v = Value(5);
+    Value v(5);
     t.setProperty("message", v);
-    t.getProperty<Value>("message").print();
+    t.getProperty("message").print();
 
     return 0;
 }
