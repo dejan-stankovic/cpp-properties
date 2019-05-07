@@ -110,7 +110,7 @@ public:
         return properties.at(prop)->get(object);
     }
 
-    template<typename T> void set(Object *object, const char *prop, Value value)
+    void set(Object *object, const char *prop, Value value)
     {
         return properties.at(prop)->set(object, value);
     }
